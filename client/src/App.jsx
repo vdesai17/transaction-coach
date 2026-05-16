@@ -1,14 +1,16 @@
-import { use, useState } from "react"
+import { useState } from "react"
 import "./App.css"
 
 function App() {
     const[description, setDescription] = useState("") //starts as empty string, updates as user types
     const[amount, setAmount] = useState("") //starts as empty string, updates as user types
-    const[result, setResult] = useState(null) //starts as null, for classification result
+    const[transactions, setTransactions] = useState([]) //starts as empty array, to store past transactions
     const[loading, setLoading] = useState(false) //for API has strated to load correctly or not
     const[error, setError] = useState(null) //for error handling
 
     async function classifyTransaction() {
+
+        if (!description || !amount) return //if either description or amount is empty, do not proceed with classification
 
         try {
 
@@ -26,8 +28,14 @@ function App() {
         //fetch the response from server
         const data = await response.json()
 
-        //now data is { category: "some category" }
-        setResult(data) //update result state with classification result from server
+        setTransactions(prev => [...prev, {
+            description,
+            amount: parseFloat(amount),
+            category: data.category
+        }])
+        setDescription("") //clear description input after classification
+        setAmount("") //clear amount input after classification
+
         setLoading(false) //set loading to false when API call is done
     }
         catch (error) {
@@ -40,34 +48,64 @@ function App() {
     }
 
     return (
+  <div className="app">
+    <div className="app-header">
+      <h1>Transaction Coach</h1>
+      <p>Classify your spending. Understand your money.</p>
+    </div>
 
-        <div className="app">
-            <h1>Transaction Coach</h1>
-            <input
-                type="text"
-                placeholder="transaction description"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-            />
-                
-            <input
-                type="number"
-                placeholder="amount"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-            />
+    <div className="input-row">
+      <input
+        type="text"
+        placeholder="Transaction description"
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+      />
+      <input
+        type="number"
+        placeholder="Amount"
+        value={amount}
+        onChange={e => setAmount(e.target.value)}
+      />
+      <button onClick={classifyTransaction}>
+        {loading ? "Classifying..." : "Classify"}
+      </button>
+    </div>
 
-            <button onClick={classifyTransaction}> {/*on click call classifyTransaction function */}
-                {loading ? "Classifying..." : "Classify"} {/*loading is true then show "Classifying..." otherwise show "Classify" */}
-            </button>
-
-            {/* on click call classifyTransaction function */}
-            {result && <p>Category: {result.category}</p>} 
-            {error && <p>{error}</p>}
+    {transactions.length > 0 && (
+      <div className="summary-bar">
+        <div className="summary-chip">
+          <strong>{transactions.length}</strong> transactions
         </div>
+        <div className="summary-chip">
+          Total spent: <strong>${transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0).toFixed(2)}</strong>
+        </div>
+      </div>
+    )}
 
-    )
+    {transactions.length > 0 && (
+      <p className="section-label">Recent Transactions</p>
+    )}
+
+    <div className="transaction-list">
+      {transactions.length === 0 ? (
+        <div className="empty-state">
+          <p>Add your first transaction above</p>
+        </div>
+      ) : (
+        transactions.map((t, i) => (
+          <div key={i} className="transaction-card">
+            <span className="t-desc">{t.description}</span>
+            <span className="t-category">{t.category}</span>
+            <span className="t-amount">${Math.abs(t.amount).toFixed(2)}</span>
+          </div>
+        ))
+      )}
+    </div>
+
+    {error && <p className="error">{error}</p>}
+  </div>
+)
     
 }
-
 export default App
