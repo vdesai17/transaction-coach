@@ -219,3 +219,55 @@ button:hover {
   border-radius: 6px;
   border: 1px solid #DBBCB4;
 }
+
+/* Auth page */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-box {
+  background: var(--panel2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 4px 24px var(--shadow);
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border2);
+}
+
+.auth-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text-pale);
+  cursor: pointer;
+  margin-bottom: -1px;
+  box-shadow: none;
+}
+
+.auth-tab:hover {
+  color: var(--blue-dark);
+  background: none;
+  box-shadow: none;
+}
+
+.auth-tab.active {
+  color: var(--blue-dark);
+  border-bottom-color: var(--blue);
+}
