@@ -1,10 +1,21 @@
+// useState for state management, useEffect to run stuff on load
 import { useState, useEffect } from "react"
-import Papa from "papaparse"
-import "./App.css"
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
-import Auth from "./pages/Auth"
-import { classifyAndSave, getTransactions, submitFeedback, predict } from "./services/api"
 
+// papaparse to read csv files
+import Papa from "papaparse"
+
+import "./App.css"
+
+// recharts stuff for the donut chart
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
+
+// auth page - shows when not logged in
+import Auth from "./pages/Auth"
+
+// all api calls go thru here instead of writing fetch everywhere
+import { classifyAndSave, getTransactions, submitFeedback } from "./services/api"
+
+// colors for the chart slices
 const COLORS = [
   "#4A7FA0", "#7BADC8", "#8B7355", "#5A8F7A",
   "#9B7EA0", "#7A8FA0", "#A07A5A", "#5A7A8F"
@@ -12,19 +23,28 @@ const COLORS = [
 
 function App() {
 
-  // auth state — null means not logged in
+  // null = not logged in, string = logged in (holds email)
   const [user, setUser] = useState(null)
 
-  // transaction state
+  // what user types in description box
   const [description, setDescription] = useState("")
+
+  // what user types in amount box
   const [amount, setAmount] = useState("")
+
+  // all transactions for this user, loaded from db on login
   const [transactions, setTransactions] = useState([])
+
+  // true while waiting for api to respond
   const [loading, setLoading] = useState(false)
+
+  // holds error msg if something breaks
   const [error, setError] = useState(null)
 
-  // correction state — tracks which transaction is being corrected
+  // id of transaction being corrected rn, null if none
   const [correctingId, setCorrectingId] = useState(null)
 
+  // all the spending categories for the correction dropdown
   const CATEGORIES = [
     "Groceries", "Dining and Cafes", "Shopping & Retail",
     "Fuel and Transport", "Housing and Utilities", "Telecom",
@@ -34,18 +54,19 @@ function App() {
     "Charity Donations", "Other / Uncategorized"
   ]
 
-  // on app load — check if user is already logged in
+  // runs once when app loads
+  // checks if user was already logged in from last session
   useEffect(() => {
     const token = localStorage.getItem("token")
     const email = localStorage.getItem("email")
     if (token && email) {
+      // token found so restore their session
       setUser(email)
-      // load their transactions from the database
       loadTransactions()
     }
   }, [])
 
-  // load transactions from database for logged in user
+  // hits GET /transactions and loads the users history from db
   async function loadTransactions() {
     try {
       const res = await getTransactions()
@@ -55,13 +76,13 @@ function App() {
     }
   }
 
-  // called after successful login or register
+  // auth component calls this after login/register succeeds
   function handleLogin(email) {
     setUser(email)
     loadTransactions()
   }
 
-  // logout — clear token and reset state
+  // wipes token from localstorage and resets everything
   function handleLogout() {
     localStorage.removeItem("token")
     localStorage.removeItem("email")
@@ -69,7 +90,8 @@ function App() {
     setTransactions([])
   }
 
-  // groups transactions by category for chart
+  // groups transactions by category and adds up amounts
+  // recharts needs [{name, value}] format
   function getChartData() {
     const totals = {}
     transactions.forEach(t => {
@@ -81,13 +103,14 @@ function App() {
     }))
   }
 
-  // classify and save a single transaction
+  // sends one transaction to POST /transactions
+  // backend classifies it with the ml model and saves to db
   async function classifyTransaction() {
     if (!description || !amount) return
     try {
       setLoading(true)
       const res = await classifyAndSave(description, parseFloat(amount))
-      // add to list with the id from database
+      // append new transaction to list using the id from db
       setTransactions(prev => [...prev, res.data])
       setDescription("")
       setAmount("")
@@ -98,7 +121,7 @@ function App() {
     }
   }
 
-  // upload and classify a CSV file
+  // reads csv file row by row and classifies each one
   async function handleCSVUpload(e) {
     const file = e.target.files[0]
     if (!file) return
@@ -107,6 +130,7 @@ function App() {
       skipEmptyLines: true,
       complete: async (results) => {
         for (const row of results.data) {
+          // handle different column name capitalizations
           const desc = row.description || row.Description || row.DESCRIPTION
           const amt = row.amount || row.Amount || row.AMOUNT
           if (!desc || !amt || isNaN(parseFloat(amt))) continue
@@ -121,11 +145,11 @@ function App() {
     })
   }
 
-  // submit a category correction
+  // sends correction to POST /feedback
+  // updates the category in local state right away so ui feels instant
   async function handleCorrection(transactionId, newCategory) {
     try {
       await submitFeedback(transactionId, newCategory)
-      // update the category in local state immediately
       setTransactions(prev => prev.map(t =>
         t.id === transactionId ? { ...t, category: newCategory } : t
       ))
@@ -135,7 +159,7 @@ function App() {
     }
   }
 
-  // if not logged in show auth screen
+  // show login/register screen if not logged in
   if (!user) {
     return <Auth onLogin={handleLogin} />
   }
@@ -143,7 +167,7 @@ function App() {
   return (
     <div className="app">
 
-      {/* header with logout */}
+      {/* header - shows email and logout button */}
       <div className="app-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1>Transaction Coach</h1>
@@ -160,7 +184,7 @@ function App() {
         </div>
       </div>
 
-      {/* input row */}
+      {/* description + amount + classify button */}
       <div className="input-row">
         <input
           type="text"
@@ -179,7 +203,7 @@ function App() {
         </button>
       </div>
 
-      {/* CSV upload */}
+      {/* csv upload - file input hidden behind the label */}
       <div style={{ margin: "0 0 24px", display: "flex", alignItems: "center", gap: "12px" }}>
         <label style={{ fontSize: "13px", color: "var(--text-dim)", cursor: "pointer", padding: "8px 16px", border: "1px dashed var(--border)", borderRadius: "6px" }}>
           Upload CSV
@@ -190,13 +214,14 @@ function App() {
         </span>
       </div>
 
-      {/* summary bar */}
+      {/* summary chips - only shows when there are transactions */}
       {transactions.length > 0 && (
         <div className="summary-bar">
           <div className="summary-chip">
             <strong>{transactions.length}</strong> transactions
           </div>
           <div className="summary-chip">
+            {/* reduce loops thru all transactions and adds up amounts */}
             Total spent: <strong>
               ${transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0).toFixed(2)}
             </strong>
@@ -204,7 +229,7 @@ function App() {
         </div>
       )}
 
-      {/* pie chart */}
+      {/* donut chart - only shows when there are transactions */}
       {transactions.length > 0 && (
         <div style={{ margin: "28px 0" }}>
           <p className="section-label">Spending Breakdown</p>
@@ -212,13 +237,17 @@ function App() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={getChartData()} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3} dataKey="value">
+                  {/* one colored slice per category */}
                   {getChartData().map((entry, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
+                {/* tooltip shows dollar amount on hover */}
                 <Tooltip formatter={(value) => `$${value}`} />
               </PieChart>
             </ResponsiveContainer>
+
+            {/* custom legend below chart */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "16px", justifyContent: "center" }}>
               {getChartData().map((entry, index) => (
                 <div key={index} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text-dim)" }}>
@@ -231,11 +260,12 @@ function App() {
         </div>
       )}
 
-      {/* transaction list */}
+      {/* section label */}
       {transactions.length > 0 && (
         <p className="section-label">Recent Transactions</p>
       )}
 
+      {/* transaction list */}
       <div className="transaction-list">
         {transactions.length === 0 ? (
           <div className="empty-state">
@@ -246,7 +276,7 @@ function App() {
             <div key={t.id || i} className="transaction-card">
               <span className="t-desc">{t.description}</span>
 
-              {/* correction UI */}
+              {/* if this transaction is being corrected show dropdown otherwise show badge */}
               {correctingId === t.id ? (
                 <select
                   style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--blue)", borderRadius: "4px", background: "var(--panel2)", color: "var(--blue-dark)" }}
@@ -258,6 +288,7 @@ function App() {
                   ))}
                 </select>
               ) : (
+                // click the badge to start correcting
                 <span
                   className="t-category"
                   onClick={() => t.id && setCorrectingId(t.id)}
@@ -274,6 +305,7 @@ function App() {
         )}
       </div>
 
+      {/* error msg if something went wrong */}
       {error && <p className="error">{error}</p>}
 
     </div>
