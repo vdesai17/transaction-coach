@@ -1,17 +1,29 @@
+# fastapi stuff
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+# pydantic for defining what request bodies look like
 from pydantic import BaseModel
+
+# ml stuff
 import joblib
 import pandas as pd
 import numpy as np
 import re
+
+# sqlalchemy session type for type hints
 from sqlalchemy.orm import Session
+
+# our db models and init function
 from database import SessionLocal, User, Transaction, Correction, init_db
+
+# auth helpers
 from auth import hash_password, verify_password, create_token, get_current_user, get_db
 
 app = FastAPI()
 
-# allow React frontend to talk to this server
+# lets react on localhost:5173 talk to this server
+# in production change allow_origins to your actual frontend url
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,27 +31,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# create database tables on startup if they don't exist
+# creates tables in postgres if they dont exist yet
+# safe to run every startup
 init_db()
 
-# load model artifacts once on startup
+# load all ml artifacts once when server starts
+# doing it here means we dont reload on every request which would be slow
 model = joblib.load("models/model.joblib")
 word_vectorizer = joblib.load("models/word_vec.joblib")
 char_vectorizer = joblib.load("models/char_vec.joblib")
 scaler = joblib.load("models/scaler.joblib")
 lexicons = joblib.load("models/lexicons.joblib")
 
-# ── Helper functions ─────────────────────────────────────────────────
 
+# lowercases text and strips everything thats not letters numbers or spaces
+# must match exactly what was done during training
 def clean_text(text):
     text = str(text).lower()
     text = re.sub(r'[^a-z0-9\s]', ' ', text)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+
+# takes a list of tokens and returns adjacent pairs
+# e.g. ["tim", "hortons"] -> ["tim hortons"]
 def generate_bigrams(tokens):
     return [f"{tokens[i]} {tokens[i+1]}" for i in range(len(tokens)-1)]
 
+
+# builds the lexicon feature columns from the merchants dictionary
+# counts how many words/bigrams in the description match each category lexicon
+# must run before passing to model - these are 46 of the 2047 features
 def extract_features(df, lexicons):
     feature_rows = []
     for row in df.itertuples(index=False):
@@ -53,110 +75,141 @@ def extract_features(df, lexicons):
         feature_rows.append(features)
     return pd.DataFrame(feature_rows)
 
-# ── Request schemas ──────────────────────────────────────────────────
 
+# helper that runs the full ml pipeline on a description and amount
+# used by both /predict and /transactions so we dont repeat the code
+def run_pipeline(desc: str, amt: float) -> str:
+    cleaned = clean_text(desc)
+    row_df = pd.DataFrame([{"cleaned_description": cleaned, "abs_amount": abs(amt)}])
+    X_lex  = extract_features(row_df, lexicons)
+    X_word = pd.DataFrame(word_vectorizer.transform([cleaned]).toarray(), columns=word_vectorizer.get_feature_names_out())
+    X_char = pd.DataFrame(char_vectorizer.transform([cleaned]).toarray(), columns=char_vectorizer.get_feature_names_out())
+    X_amt  = pd.DataFrame(scaler.transform(row_df[["abs_amount"]]), columns=["abs_amount"])
+    X = pd.concat([
+        X_lex.reset_index(drop=True),
+        X_word.reset_index(drop=True),
+        X_char.reset_index(drop=True),
+        X_amt.reset_index(drop=True)
+    ], axis=1)
+    return model.predict(X)[0]
+
+
+# what a transaction request body looks like
 class TransactionRequest(BaseModel):
     description: str
     amount: float
 
+# what a register request body looks like
 class RegisterRequest(BaseModel):
     email: str
     password: str
 
+# what a login request body looks like
 class LoginRequest(BaseModel):
     email: str
     password: str
 
+# what a correction request body looks like
 class CorrectionRequest(BaseModel):
     transaction_id: int
     corrected_category: str
 
-# ── Auth endpoints ───────────────────────────────────────────────────
 
-@app.post("/register")
-def register(body: RegisterRequest, db: Session = Depends(get_db)):
-    # check if email already exists
-    existing = db.query(User).filter(User.email == body.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    # create new user with hashed password
-    user = User(email=body.email, password=hash_password(body.password))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    # return a token so user is logged in immediately after registering
-    return {"token": create_token(user.id), "email": user.email}
-
-@app.post("/login")
-def login(body: LoginRequest, db: Session = Depends(get_db)):
-    # find user by email
-    user = db.query(User).filter(User.email == body.email).first()
-    if not user or not verify_password(body.password, user.password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    # return JWT token
-    return {"token": create_token(user.id), "email": user.email}
-
-# ── Routes ───────────────────────────────────────────────────────────
-
+# health check - just confirms server is running
 @app.get("/")
 def root():
     return {"status": "Transaction Coach API is running"}
 
+
+# creates a new user account
+# hashes password before storing - never stores plain text
+# returns a jwt token so user is logged in immediately
+@app.post("/register")
+def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == body.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(email=body.email, password=hash_password(body.password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"token": create_token(user.id), "email": user.email}
+
+
+# verifies email and password, returns jwt token if correct
+# 401 if email not found or password wrong
+@app.post("/login")
+def login(body: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user or not verify_password(body.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return {"token": create_token(user.id), "email": user.email}
+
+
+# classifies a transaction without saving - no auth needed
+# used for quick testing or anonymous classification
 @app.post("/predict")
 def predict(transaction: TransactionRequest):
-    # no auth required — anyone can classify
-    desc = transaction.description
-    amt = transaction.amount
-    cleaned = clean_text(desc)
-    row_df = pd.DataFrame([{"cleaned_description": cleaned, "abs_amount": abs(amt)}])
-    X_lex = extract_features(row_df, lexicons)
-    X_word = pd.DataFrame(word_vectorizer.transform([cleaned]).toarray(), columns=word_vectorizer.get_feature_names_out())
-    X_char = pd.DataFrame(char_vectorizer.transform([cleaned]).toarray(), columns=char_vectorizer.get_feature_names_out())
-    X_amt = pd.DataFrame(scaler.transform(row_df[["abs_amount"]]), columns=["abs_amount"])
-    X = pd.concat([X_lex.reset_index(drop=True), X_word.reset_index(drop=True), X_char.reset_index(drop=True), X_amt.reset_index(drop=True)], axis=1)
-    pred = model.predict(X)
-    return {"category": pred[0]}
+    category = run_pipeline(transaction.description, transaction.amount)
+    return {"category": category}
 
+
+# classifies AND saves a transaction to the database
+# requires auth - token must be in Authorization header
+# ties the transaction to the logged in user
 @app.post("/transactions")
-def save_transaction(transaction: TransactionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # classify the transaction
-    desc = transaction.description
-    amt = transaction.amount
-    cleaned = clean_text(desc)
-    row_df = pd.DataFrame([{"cleaned_description": cleaned, "abs_amount": abs(amt)}])
-    X_lex = extract_features(row_df, lexicons)
-    X_word = pd.DataFrame(word_vectorizer.transform([cleaned]).toarray(), columns=word_vectorizer.get_feature_names_out())
-    X_char = pd.DataFrame(char_vectorizer.transform([cleaned]).toarray(), columns=char_vectorizer.get_feature_names_out())
-    X_amt = pd.DataFrame(scaler.transform(row_df[["abs_amount"]]), columns=["abs_amount"])
-    X = pd.concat([X_lex.reset_index(drop=True), X_word.reset_index(drop=True), X_char.reset_index(drop=True), X_amt.reset_index(drop=True)], axis=1)
-    pred = model.predict(X)
-    category = pred[0]
+def save_transaction(
+    transaction: TransactionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # run ml pipeline to get category
+    category = run_pipeline(transaction.description, transaction.amount)
 
-    # save to database tied to this user
+    # save to db with user id so we can load it back later
     t = Transaction(
         user_id=current_user.id,
-        description=desc,
-        amount=amt,
+        description=transaction.description,
+        amount=transaction.amount,
         category=category
     )
     db.add(t)
     db.commit()
-    db.refresh(t)
+    db.refresh(t)  # reload from db to get the auto generated id
 
-    return {"id": t.id, "category": category, "description": desc, "amount": amt}
+    return {"id": t.id, "category": category, "description": transaction.description, "amount": transaction.amount}
 
+
+# returns all transactions for the logged in user
+# filters by user_id so users only see their own data
 @app.get("/transactions")
-def get_transactions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # get all transactions for the logged in user
+def get_transactions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     transactions = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
-    return [{"id": t.id, "description": t.description, "amount": t.amount, "category": t.category, "created_at": t.created_at} for t in transactions]
+    return [
+        {
+            "id": t.id,
+            "description": t.description,
+            "amount": t.amount,
+            "category": t.category,
+            "created_at": t.created_at
+        }
+        for t in transactions
+    ]
 
+
+# saves a correction when user clicks wrong category
+# logs original and corrected category for model retraining later
+# also updates the transaction itself so ui shows correct category
 @app.post("/feedback")
-def submit_feedback(body: CorrectionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # find the transaction
+def submit_feedback(
+    body: CorrectionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # find the transaction - also checks it belongs to this user
     transaction = db.query(Transaction).filter(
         Transaction.id == body.transaction_id,
         Transaction.user_id == current_user.id
@@ -164,7 +217,8 @@ def submit_feedback(body: CorrectionRequest, current_user: User = Depends(get_cu
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    # save the correction
+    # log the correction to corrections table
+    # this data can be used to retrain the model later
     correction = Correction(
         user_id=current_user.id,
         transaction_id=body.transaction_id,
@@ -173,7 +227,7 @@ def submit_feedback(body: CorrectionRequest, current_user: User = Depends(get_cu
     )
     db.add(correction)
 
-    # update the transaction's category to the corrected one
+    # update the transaction too so it shows the right category
     transaction.category = body.corrected_category
     db.commit()
 
