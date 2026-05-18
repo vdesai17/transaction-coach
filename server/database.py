@@ -3,10 +3,11 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from datetime import datetime
+import os
 
 # address of our postgres database running locally
 # format is: postgresql://host/database_name
-DATABASE_URL = "postgresql://localhost/transaction_coach"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/transaction_coach")
 
 # engine is the actual connection to postgres
 # think of it like opening a phone line to the database
