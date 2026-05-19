@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react"
 import Papa from "papaparse"
 import "./App.css"
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 import Auth from "./pages/Auth"
 import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction } from "./services/api"
 
 const COLORS = [
-  "#4A7FA0", "#7BADC8", "#8B7355", "#5A8F7A",
-  "#9B7EA0", "#7A8FA0", "#A07A5A", "#5A7A8F"
+  "#4E6E38", "#8B3E2A", "#7A9A5A", "#C4A030",
+  "#6B3820", "#5A7A6A", "#B89A50", "#5A6E3A"
 ]
 
 function App() {
@@ -78,6 +78,21 @@ function App() {
       value: parseFloat(value.toFixed(2))
     }))
   }
+
+ function getTrendData() {
+  const monthTotals = {}
+  transactions.forEach(t => {
+    if (!t.date) return
+    const month = t.date.slice(0, 7)
+    monthTotals[month] = (monthTotals[month] || 0) + Math.abs(t.amount)
+  })
+  return Object.entries(monthTotals)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, total]) => ({
+      month,
+      total: parseFloat(total.toFixed(2))
+    }))
+}
 
  async function classifyTransaction() {
   if (!description || !amount) return
@@ -255,6 +270,24 @@ function App() {
         </div>
       )}
 
+      {/* trend chart - only shows when there are 2+ months of data */}
+      {getTrendData().length > 1 && (
+        <div style={{ margin: "28px 0" }}>
+          <p className="section-label">Monthly Spending Trend</p>
+          <div style={{ background: "var(--panel2)", border: "1px solid var(--border2)", borderRadius: "10px", padding: "24px", boxShadow: "0 1px 6px var(--shadow2)" }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={getTrendData()} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border2)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-dim)" }} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--text-dim)" }} />
+                <Tooltip formatter={(value) => `$${value}`} />
+                <Bar dataKey="total" fill="var(--green)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {filteredTransactions.length > 0 && (
         <p className="section-label">Recent Transactions</p>
       )}
@@ -275,7 +308,7 @@ function App() {
 
               {correctingId === t.id ? (
                 <select
-                  style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--blue)", borderRadius: "4px", background: "var(--panel2)", color: "var(--blue-dark)" }}
+                  style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--green)", borderRadius: "4px", background: "var(--panel2)", color: "var(--green-dark)" }}
                   defaultValue={t.category}
                   onChange={e => handleCorrection(t.id, e.target.value)}
                 >

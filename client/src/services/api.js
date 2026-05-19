@@ -34,8 +34,8 @@ export const login = (email, password) =>
 // classifies a transaction with the ml model AND saves it to db
 // requires auth token - tied to the logged in user
 // returns { id, description, amount, category }
-export const classifyAndSave = (description, amount) =>
-  API.post("/transactions", { description, amount })
+export const classifyAndSave = (description, amount, date) =>
+  API.post("/transactions", { description, amount, date })
 
 // loads all transactions for the logged in user from db
 // returns array of { id, description, amount, category, created_at }

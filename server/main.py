@@ -170,25 +170,27 @@ def save_transaction(
     # run ml pipeline to get category
     category = run_pipeline(transaction.description, transaction.amount)
 
+    transaction_date = datetime.strptime(transaction.date, "%Y-%m-%d") if transaction.date else None
+
     # save to db with user id so we can load it back later
     t = Transaction(
         user_id=current_user.id,
         description=transaction.description,
         amount=transaction.amount,
         category=category,
-        date=datetime.strptime(transaction.date, "%Y-%m-%d") if transaction.date else datetime.utcnow()
+        date=transaction_date
     )
     db.add(t)
     db.commit()
     db.refresh(t)  # reload from db to get the auto generated id
 
     return {
-    "id": t.id,
-    "category": category,
-    "description": transaction.description,
-    "amount": transaction.amount,
-    "date": t.date.strftime("%Y-%m-%d") if t.date else None
-}
+        "id": t.id,
+        "category": category,
+        "description": transaction.description,
+        "amount": transaction.amount,
+        "date": transaction_date.strftime("%Y-%m-%d") if transaction_date else None
+    }
 
 
 # returns all transactions for the logged in user
