@@ -6,8 +6,8 @@ import Auth from "./pages/Auth"
 import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction } from "./services/api"
 
 const COLORS = [
-  "#4E6E38", "#8B3E2A", "#7A9A5A", "#C4A030",
-  "#6B3820", "#5A7A6A", "#B89A50", "#5A6E3A"
+  "#3B82F6", "#8B5CF6", "#10B981", "#F59E0B",
+  "#EF4444", "#06B6D4", "#EC4899", "#6366F1"
 ]
 
 function App() {
@@ -21,6 +21,13 @@ function App() {
   const [correctingId, setCorrectingId] = useState(null)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [isDark, setIsDark] = useState(() => (localStorage.getItem("theme") || "dark") === "dark")
+
+  useEffect(() => {
+    const theme = isDark ? "dark" : "light"
+    document.documentElement.setAttribute("data-theme", theme)
+    localStorage.setItem("theme", theme)
+  }, [isDark])
 
   // filters transactions to only show selected month
   const filteredTransactions = transactions.filter(t => {
@@ -165,17 +172,25 @@ function App() {
 
       <div className="app-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <h1>Transaction Coach</h1>
-          <p>Classify your spending. Understand your money.</p>
+          <h1>Finsnap</h1>
+          <p>Understand your money in one page.</p>
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "6px" }}>{user}</div>
-          <button
-            onClick={handleLogout}
-            style={{ padding: "6px 14px", fontSize: "11px", background: "none", color: "var(--text-dim)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: "pointer" }}
-          >
-            Logout
-          </button>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setIsDark(d => !d)}
+              style={{ padding: "6px 12px", fontSize: "11px", background: "none", color: "var(--text-dim)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: "pointer" }}
+            >
+              {isDark ? "Light" : "Dark"}
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{ padding: "6px 14px", fontSize: "11px", background: "none", color: "var(--text-dim)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: "pointer" }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -281,7 +296,7 @@ function App() {
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-dim)" }} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--text-dim)" }} />
                 <Tooltip formatter={(value) => `$${value}`} />
-                <Bar dataKey="total" fill="var(--green)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" fill="var(--accent)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -308,7 +323,7 @@ function App() {
 
               {correctingId === t.id ? (
                 <select
-                  style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--green)", borderRadius: "4px", background: "var(--panel2)", color: "var(--green-dark)" }}
+                  style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--accent)", borderRadius: "4px", background: "var(--panel2)", color: "var(--accent-lt)" }}
                   defaultValue={t.category}
                   onChange={e => handleCorrection(t.id, e.target.value)}
                 >
@@ -341,8 +356,7 @@ function App() {
                     borderRadius: "4px",
                     cursor: "pointer"
                   }}
-                >
-                  ×
+                >Delete
                 </button>
               )}
             </div>

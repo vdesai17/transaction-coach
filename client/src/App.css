@@ -1,22 +1,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap');
 
+/* ─── Dark / winter night (default) ─── */
 :root {
-  --bg:          #E9EDE0;
-  --bg2:         #F0F4E8;
-  --panel:       #F3F6EE;
-  --panel2:      #F9FAF5;
-  --border:      #BEC9AE;
-  --border2:     #D1DBC5;
-  --green:       #4E6E38;
-  --green-lt:    #7A9A5A;
-  --green-pale:  #D3E3C0;
-  --green-dark:  #3A5228;
-  --text:        #1C2214;
-  --text-dim:    #4A5E38;
-  --text-pale:   #879A6C;
-  --warm:        #6B3E26;
-  --shadow:      rgba(28,34,20,.09);
-  --shadow2:     rgba(28,34,20,.04);
+  --bg:          #080D18;
+  --bg2:         #0C1220;
+  --panel:       #0F1623;
+  --panel2:      #131D2D;
+  --border:      #192640;
+  --border2:     #1E2F4E;
+  --accent:      #3B82F6;
+  --accent-lt:   #60A5FA;
+  --accent-pale: #0D1B35;
+  --accent-dark: #2563EB;
+  --text:        #DCE8F5;
+  --text-dim:    #8AACC8;
+  --text-pale:   #3C5570;
+  --warm:        #93C5FD;
+  --shadow:      rgba(0,0,0,.55);
+  --shadow2:     rgba(0,0,0,.28);
+  color-scheme: dark;
+}
+
+/* ─── Light ─── */
+[data-theme="light"] {
+  --bg:          #F0F4F8;
+  --bg2:         #F8FAFC;
+  --panel:       #FFFFFF;
+  --panel2:      #FFFFFF;
+  --border:      #DCE4ED;
+  --border2:     #E8EEF5;
+  --accent:      #2563EB;
+  --accent-lt:   #3B82F6;
+  --accent-pale: #EFF6FF;
+  --accent-dark: #1D4ED8;
+  --text:        #1A2535;
+  --text-dim:    #4A5D73;
+  --text-pale:   #8BA3B8;
+  --warm:        #2563EB;
+  --shadow:      rgba(0,0,0,.08);
+  --shadow2:     rgba(0,0,0,.04);
+  color-scheme: light;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -27,8 +50,14 @@ body {
   color: var(--text);
   min-height: 100vh;
   background-image:
-    radial-gradient(ellipse at 25% 0%,  rgba(78,110,56,.13) 0%, transparent 55%),
-    radial-gradient(ellipse at 88% 88%, rgba(107,62,38,.07) 0%, transparent 48%);
+    radial-gradient(ellipse at 15% 0%,  rgba(59,130,246,.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 88% 88%, rgba(99,102,241,.08) 0%, transparent 48%);
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse at 15% 0%,  rgba(37,99,235,.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 88% 88%, rgba(99,102,241,.04) 0%, transparent 48%);
 }
 
 .app {
@@ -99,7 +128,7 @@ input[type="date"] {
 }
 
 button {
-  background: var(--green);
+  background: var(--accent);
   color: white;
   border: none;
   padding: 10px 22px;
@@ -114,8 +143,8 @@ button {
 }
 
 button:hover {
-  background: var(--green-dark);
-  box-shadow: 0 4px 14px rgba(78,110,56,.30);
+  background: var(--accent-dark);
+  box-shadow: 0 4px 14px rgba(59,130,246,.30);
 }
 
 /* Summary bar */
@@ -137,7 +166,7 @@ button:hover {
 }
 
 .summary-chip strong {
-  color: var(--green);
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -178,7 +207,7 @@ button:hover {
 }
 
 .transaction-card:hover {
-  border-color: var(--green-lt);
+  border-color: var(--accent);
   box-shadow: 0 4px 16px var(--shadow);
 }
 
@@ -193,8 +222,8 @@ button:hover {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .5px;
-  color: var(--green-dark);
-  background: var(--green-pale);
+  color: var(--accent-lt);
+  background: var(--accent-pale);
   padding: 4px 12px;
   border-radius: 20px;
   white-space: nowrap;
@@ -224,12 +253,18 @@ button:hover {
 /* Error */
 .error {
   font-size: 13px;
-  color: #6B2A1A;
+  color: #FCA5A5;
   margin-top: 8px;
   padding: 10px 14px;
-  background: #EFE0D8;
+  background: #2A1515;
   border-radius: 6px;
-  border: 1px solid #D4B4A8;
+  border: 1px solid #5B2525;
+}
+
+[data-theme="light"] .error {
+  color: #7F1D1D;
+  background: #FEE2E2;
+  border-color: #FCA5A5;
 }
 
 /* Auth page */
@@ -249,6 +284,17 @@ button:hover {
   width: 100%;
   max-width: 420px;
   box-shadow: 0 4px 24px var(--shadow);
+}
+
+.auth-box input {
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  width: 100%;
+  background: var(--panel);
+}
+
+.auth-box input:focus {
+  border-color: var(--accent);
 }
 
 .auth-tabs {
@@ -274,12 +320,12 @@ button:hover {
 }
 
 .auth-tab:hover {
-  color: var(--green-dark);
+  color: var(--accent);
   background: none;
   box-shadow: none;
 }
 
 .auth-tab.active {
-  color: var(--green-dark);
-  border-bottom-color: var(--green);
+  color: var(--accent-lt);
+  border-bottom-color: var(--accent);
 }
