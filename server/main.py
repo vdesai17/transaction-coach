@@ -170,7 +170,14 @@ def save_transaction(
     # run ml pipeline to get category
     category = run_pipeline(transaction.description, transaction.amount)
 
-    transaction_date = datetime.strptime(transaction.date, "%Y-%m-%d") if transaction.date else None
+    transaction_date = None
+    if transaction.date:
+        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%m/%d/%Y", "%d/%m/%Y", "%d-%m-%Y"):
+            try:
+                transaction_date = datetime.strptime(transaction.date.strip(), fmt)
+                break
+            except ValueError:
+                continue
 
     # save to db with user id so we can load it back later
     t = Transaction(

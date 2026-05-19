@@ -22,6 +22,7 @@ function App() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [isDark, setIsDark] = useState(() => (localStorage.getItem("theme") || "dark") === "dark")
+  const [csvProgress, setCsvProgress] = useState(null) // null | { done, total }
 
   useEffect(() => {
     const theme = isDark ? "dark" : "light"
@@ -118,26 +119,63 @@ function App() {
   }
 }
 
+  function normalizeDate(raw) {
+    if (!raw) return new Date().toISOString().split('T')[0]
+    const s = String(raw).trim()
+    // already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+    // YYYY/MM/DD
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-')
+    // MM/DD/YYYY or DD/MM/YYYY — try JS Date
+    const d = new Date(s)
+    if (!isNaN(d)) return d.toISOString().split('T')[0]
+    return new Date().toISOString().split('T')[0]
+  }
+
   async function handleCSVUpload(e) {
     const file = e.target.files[0]
     if (!file) return
-    const today = new Date().toISOString().split('T')[0]
+    // reset so the same file can be re-uploaded
+    e.target.value = ""
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
-        for (const row of results.data) {
+      complete: (results) => {
+        // PapaParse doesn't await async callbacks — kick off the work outside
+        const validRows = results.data.filter(row => {
           const desc = row.description || row.Description || row.DESCRIPTION
-          const amt = row.amount || row.Amount || row.AMOUNT
-          const rowDate = row.date || row.Date || today
-          if (!desc || !amt || isNaN(parseFloat(amt))) continue
-          try {
-            const res = await classifyAndSave(desc, parseFloat(amt), rowDate)
-            setTransactions(prev => [...prev, res.data])
-          } catch (err) {
-            console.error("Failed to classify:", desc)
-          }
+          const amt  = row.amount      || row.Amount      || row.AMOUNT
+          return desc && amt && !isNaN(parseFloat(amt))
+        })
+
+        if (validRows.length === 0) {
+          setError("No valid rows found. CSV needs 'description' and 'amount' columns.")
+          return
         }
+
+        setCsvProgress({ done: 0, total: validRows.length })
+
+        ;(async () => {
+          let done = 0
+          for (const row of validRows) {
+            const desc    = row.description || row.Description || row.DESCRIPTION
+            const amt     = row.amount      || row.Amount      || row.AMOUNT
+            const rowDate = normalizeDate(row.date || row.Date || row.DATE)
+            try {
+              const res = await classifyAndSave(desc, parseFloat(amt), rowDate)
+              setTransactions(prev => [...prev, res.data])
+            } catch (err) {
+              console.error("Failed to classify row:", desc, err?.response?.data || err.message)
+            }
+            done++
+            setCsvProgress({ done, total: validRows.length })
+          }
+          setCsvProgress(null)
+        })()
+      },
+      error: (err) => {
+        setError(`CSV parse error: ${err.message}`)
       }
     })
   }
@@ -218,14 +256,20 @@ function App() {
         </button>
       </div>
 
-      <div style={{ margin: "0 0 24px", display: "flex", alignItems: "center", gap: "12px" }}>
-        <label style={{ fontSize: "13px", color: "var(--text-dim)", cursor: "pointer", padding: "8px 16px", border: "1px dashed var(--border)", borderRadius: "6px" }}>
+      <div style={{ margin: "0 0 24px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <label style={{ fontSize: "13px", color: "var(--text-dim)", cursor: csvProgress ? "not-allowed" : "pointer", padding: "8px 16px", border: "1px dashed var(--border)", borderRadius: "6px", opacity: csvProgress ? 0.5 : 1 }}>
           Upload CSV
-          <input type="file" accept=".csv" onChange={handleCSVUpload} style={{ display: "none" }} />
+          <input type="file" accept=".csv" onChange={handleCSVUpload} style={{ display: "none" }} disabled={!!csvProgress} />
         </label>
-        <span style={{ fontSize: "12px", color: "var(--text-pale)" }}>
-          CSV needs "description" and "amount" columns
-        </span>
+        {csvProgress ? (
+          <span style={{ fontSize: "12px", color: "var(--text-dim)" }}>
+            Classifying {csvProgress.done} / {csvProgress.total}...
+          </span>
+        ) : (
+          <span style={{ fontSize: "12px", color: "var(--text-pale)" }}>
+            CSV needs "description" and "amount" columns
+          </span>
+        )}
       </div>
 
       {/* month filter */}
