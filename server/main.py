@@ -183,9 +183,9 @@ def save_transaction(
     db.refresh(t)  # reload from db to get the auto generated id
 
     return {
-    "id": t.id, 
-    "category": category, 
-    "description": transaction.description, 
+    "id": t.id,
+    "category": category,
+    "description": transaction.description,
     "amount": transaction.amount,
     "date": t.date.strftime("%Y-%m-%d") if t.date else None
 }

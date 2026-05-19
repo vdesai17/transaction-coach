@@ -79,20 +79,22 @@ function App() {
     }))
   }
 
-  async function classifyTransaction() {
-    if (!description || !amount) return
-    try {
-      setLoading(true)
-      const res = await classifyAndSave(description, parseFloat(amount), date)
-      setTransactions(prev => [...prev, res.data])
-      setDescription("")
-      setAmount("")
-    } catch (err) {
-      setError("Error classifying transaction")
-    } finally {
-      setLoading(false)
-    }
+ async function classifyTransaction() {
+  if (!description || !amount) return
+  try {
+    setLoading(true)
+    console.log("sending date:", date)
+    const res = await classifyAndSave(description, parseFloat(amount), date)
+    console.log("response:", res.data)
+    setTransactions(prev => [...prev, res.data])
+    setDescription("")
+    setAmount("")
+  } catch (err) {
+    setError("Error classifying transaction")
+  } finally {
+    setLoading(false)
   }
+}
 
   async function handleCSVUpload(e) {
     const file = e.target.files[0]
