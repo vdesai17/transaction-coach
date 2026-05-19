@@ -329,8 +329,7 @@ function App() {
         </div>
       )}
 
-      {/* trend chart - only shows when there are 2+ months of data */}
-      {getTrendData().length > 1 && (
+      {getTrendData().length > 0 && (
         <div style={{ margin: "28px 0" }}>
           <p className="section-label">Monthly Spending Trend</p>
           <div style={{ background: "var(--panel2)", border: "1px solid var(--border2)", borderRadius: "10px", padding: "24px", boxShadow: "0 1px 6px var(--shadow2)" }}>
