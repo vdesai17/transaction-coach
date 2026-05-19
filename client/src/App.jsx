@@ -1,21 +1,10 @@
-// useState for state management, useEffect to run stuff on load
 import { useState, useEffect } from "react"
-
-// papaparse to read csv files
 import Papa from "papaparse"
-
 import "./App.css"
-
-// recharts stuff for the donut chart
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
-
-// auth page - shows when not logged in
 import Auth from "./pages/Auth"
-
-// all api calls go thru here instead of writing fetch everywhere
 import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction } from "./services/api"
 
-// colors for the chart slices
 const COLORS = [
   "#4A7FA0", "#7BADC8", "#8B7355", "#5A8F7A",
   "#9B7EA0", "#7A8FA0", "#A07A5A", "#5A7A8F"
@@ -23,28 +12,22 @@ const COLORS = [
 
 function App() {
 
-  // null = not logged in, string = logged in (holds email)
   const [user, setUser] = useState(null)
-
-  // what user types in description box
   const [description, setDescription] = useState("")
-
-  // what user types in amount box
   const [amount, setAmount] = useState("")
-
-  // all transactions for this user, loaded from db on login
   const [transactions, setTransactions] = useState([])
-
-  // true while waiting for api to respond
   const [loading, setLoading] = useState(false)
-
-  // holds error msg if something breaks
   const [error, setError] = useState(null)
-
-  // id of transaction being corrected rn, null if none
   const [correctingId, setCorrectingId] = useState(null)
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
-  // all the spending categories for the correction dropdown
+  // filters transactions to only show selected month
+  const filteredTransactions = transactions.filter(t => {
+    if (!t.date) return true
+    return t.date.slice(0, 7) === selectedMonth
+  })
+
   const CATEGORIES = [
     "Groceries", "Dining and Cafes", "Shopping & Retail",
     "Fuel and Transport", "Housing and Utilities", "Telecom",
@@ -54,19 +37,15 @@ function App() {
     "Charity Donations", "Other / Uncategorized"
   ]
 
-  // runs once when app loads
-  // checks if user was already logged in from last session
   useEffect(() => {
     const token = localStorage.getItem("token")
     const email = localStorage.getItem("email")
     if (token && email) {
-      // token found so restore their session
       setUser(email)
       loadTransactions()
     }
   }, [])
 
-  // hits GET /transactions and loads the users history from db
   async function loadTransactions() {
     try {
       const res = await getTransactions()
@@ -76,13 +55,11 @@ function App() {
     }
   }
 
-  // auth component calls this after login/register succeeds
   function handleLogin(email) {
     setUser(email)
     loadTransactions()
   }
 
-  // wipes token from localstorage and resets everything
   function handleLogout() {
     localStorage.removeItem("token")
     localStorage.removeItem("email")
@@ -90,11 +67,10 @@ function App() {
     setTransactions([])
   }
 
-  // groups transactions by category and adds up amounts
-  // recharts needs [{name, value}] format
+  // uses filteredTransactions so chart reflects selected month
   function getChartData() {
     const totals = {}
-    transactions.forEach(t => {
+    filteredTransactions.forEach(t => {
       totals[t.category] = (totals[t.category] || 0) + Math.abs(t.amount)
     })
     return Object.entries(totals).map(([name, value]) => ({
@@ -103,14 +79,11 @@ function App() {
     }))
   }
 
-  // sends one transaction to POST /transactions
-  // backend classifies it with the ml model and saves to db
   async function classifyTransaction() {
     if (!description || !amount) return
     try {
       setLoading(true)
-      const res = await classifyAndSave(description, parseFloat(amount))
-      // append new transaction to list using the id from db
+      const res = await classifyAndSave(description, parseFloat(amount), date)
       setTransactions(prev => [...prev, res.data])
       setDescription("")
       setAmount("")
@@ -121,21 +94,21 @@ function App() {
     }
   }
 
-  // reads csv file row by row and classifies each one
   async function handleCSVUpload(e) {
     const file = e.target.files[0]
     if (!file) return
+    const today = new Date().toISOString().split('T')[0]
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
         for (const row of results.data) {
-          // handle different column name capitalizations
           const desc = row.description || row.Description || row.DESCRIPTION
           const amt = row.amount || row.Amount || row.AMOUNT
+          const rowDate = row.date || row.Date || today
           if (!desc || !amt || isNaN(parseFloat(amt))) continue
           try {
-            const res = await classifyAndSave(desc, parseFloat(amt))
+            const res = await classifyAndSave(desc, parseFloat(amt), rowDate)
             setTransactions(prev => [...prev, res.data])
           } catch (err) {
             console.error("Failed to classify:", desc)
@@ -145,8 +118,6 @@ function App() {
     })
   }
 
-  // sends correction to POST /feedback
-  // updates the category in local state right away so ui feels instant
   async function handleCorrection(transactionId, newCategory) {
     try {
       await submitFeedback(transactionId, newCategory)
@@ -159,17 +130,15 @@ function App() {
     }
   }
 
-  // deletes a transaction and removes it from local state
   async function handleDelete(transactionId) {
     try {
-        await deleteTransaction(transactionId)
-        setTransactions(prev => prev.filter(t => t.id !== transactionId))
+      await deleteTransaction(transactionId)
+      setTransactions(prev => prev.filter(t => t.id !== transactionId))
     } catch (err) {
-        console.error("Failed to delete", err)
+      console.error("Failed to delete", err)
     }
-}
+  }
 
-  // show login/register screen if not logged in
   if (!user) {
     return <Auth onLogin={handleLogin} />
   }
@@ -177,7 +146,6 @@ function App() {
   return (
     <div className="app">
 
-      {/* header - shows email and logout button */}
       <div className="app-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1>Transaction Coach</h1>
@@ -194,7 +162,6 @@ function App() {
         </div>
       </div>
 
-      {/* description + amount + classify button */}
       <div className="input-row">
         <input
           type="text"
@@ -208,12 +175,17 @@ function App() {
           value={amount}
           onChange={e => setAmount(e.target.value)}
         />
+        <input
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          style={{ flex: "0 0 auto" }}
+        />
         <button onClick={classifyTransaction}>
           {loading ? "Classifying..." : "Classify"}
         </button>
       </div>
 
-      {/* csv upload - file input hidden behind the label */}
       <div style={{ margin: "0 0 24px", display: "flex", alignItems: "center", gap: "12px" }}>
         <label style={{ fontSize: "13px", color: "var(--text-dim)", cursor: "pointer", padding: "8px 16px", border: "1px dashed var(--border)", borderRadius: "6px" }}>
           Upload CSV
@@ -224,40 +196,51 @@ function App() {
         </span>
       </div>
 
-      {/* summary chips - only shows when there are transactions */}
+      {/* month filter */}
       {transactions.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-pale)", letterSpacing: "1.5px", textTransform: "uppercase" }}>Month</span>
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            style={{ fontSize: "13px", padding: "6px 12px", border: "1px solid var(--border2)", borderRadius: "6px", background: "var(--panel2)", color: "var(--text)", outline: "none" }}
+          />
+          <span style={{ fontSize: "12px", color: "var(--text-pale)" }}>
+            {filteredTransactions.length} transactions
+          </span>
+        </div>
+      )}
+
+      {/* summary bar - uses filteredTransactions */}
+      {filteredTransactions.length > 0 && (
         <div className="summary-bar">
           <div className="summary-chip">
-            <strong>{transactions.length}</strong> transactions
+            <strong>{filteredTransactions.length}</strong> transactions
           </div>
           <div className="summary-chip">
-            {/* reduce loops thru all transactions and adds up amounts */}
             Total spent: <strong>
-              ${transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0).toFixed(2)}
+              ${filteredTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0).toFixed(2)}
             </strong>
           </div>
         </div>
       )}
 
-      {/* donut chart - only shows when there are transactions */}
-      {transactions.length > 0 && (
+      {/* donut chart - uses filteredTransactions via getChartData */}
+      {filteredTransactions.length > 0 && (
         <div style={{ margin: "28px 0" }}>
           <p className="section-label">Spending Breakdown</p>
           <div style={{ background: "var(--panel2)", border: "1px solid var(--border2)", borderRadius: "10px", padding: "24px", boxShadow: "0 1px 6px var(--shadow2)" }}>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={getChartData()} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3} dataKey="value">
-                  {/* one colored slice per category */}
                   {getChartData().map((entry, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                {/* tooltip shows dollar amount on hover */}
                 <Tooltip formatter={(value) => `$${value}`} />
               </PieChart>
             </ResponsiveContainer>
-
-            {/* custom legend below chart */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "16px", justifyContent: "center" }}>
               {getChartData().map((entry, index) => (
                 <div key={index} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text-dim)" }}>
@@ -270,23 +253,24 @@ function App() {
         </div>
       )}
 
-      {/* section label */}
-      {transactions.length > 0 && (
+      {filteredTransactions.length > 0 && (
         <p className="section-label">Recent Transactions</p>
       )}
 
-      {/* transaction list */}
       <div className="transaction-list">
-        {transactions.length === 0 ? (
+        {filteredTransactions.length === 0 ? (
           <div className="empty-state">
-            <p>Add your first transaction above</p>
+            <p>{transactions.length === 0 ? "Add your first transaction above" : "No transactions for this month"}</p>
           </div>
         ) : (
-          transactions.map((t, i) => (
+          filteredTransactions.map((t, i) => (
             <div key={t.id || i} className="transaction-card">
               <span className="t-desc">{t.description}</span>
 
-              {/* if this transaction is being corrected show dropdown otherwise show badge */}
+              <span style={{ fontSize: "11px", color: "var(--text-pale)", minWidth: "80px" }}>
+                {t.date ? new Date(t.date).toLocaleDateString("en-CA") : ""}
+              </span>
+
               {correctingId === t.id ? (
                 <select
                   style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--blue)", borderRadius: "4px", background: "var(--panel2)", color: "var(--blue-dark)" }}
@@ -298,7 +282,6 @@ function App() {
                   ))}
                 </select>
               ) : (
-                // click the badge to start correcting
                 <span
                   className="t-category"
                   onClick={() => t.id && setCorrectingId(t.id)}
@@ -311,29 +294,27 @@ function App() {
 
               <span className="t-amount">${Math.abs(t.amount).toFixed(2)}</span>
 
-              {/* delete button */}
               {t.id && (
-              <button
-              onClick={() => handleDelete(t.id)}
-              style={{
-                padding: "3px 10px",
-                fontSize: "11px",
-                background: "none",
-                color: "var(--text-pale)",
-                border: "1px solid var(--border2)",
-                borderRadius: "4px",
-                cursor: "pointer"
-                 }}
-               >
-               ×
-              </button>
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  style={{
+                    padding: "3px 10px",
+                    fontSize: "11px",
+                    background: "none",
+                    color: "var(--text-pale)",
+                    border: "1px solid var(--border2)",
+                    borderRadius: "4px",
+                    cursor: "pointer"
+                  }}
+                >
+                  ×
+                </button>
               )}
             </div>
           ))
         )}
       </div>
 
-      {/* error msg if something went wrong */}
       {error && <p className="error">{error}</p>}
 
     </div>

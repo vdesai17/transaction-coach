@@ -48,6 +48,7 @@ class Transaction(Base):
     description = Column(String, nullable=False)   # e.g. "Tim Hortons"
     amount      = Column(Float, nullable=False)    # e.g. -4.50
     category    = Column(String, nullable=False)   # e.g. "Dining and Cafes"
+    date        = Column(DateTime, nullable=True)  # when the transaction happened
     created_at  = Column(DateTime, default=datetime.utcnow)
 
     # lets us do transaction.user to get the user who owns it

@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 # pydantic for defining what request bodies look like
 from pydantic import BaseModel
 
+from typing import Optional
+from datetime import datetime
+
 # ml stuff
 import joblib
 import pandas as pd
@@ -98,6 +101,7 @@ def run_pipeline(desc: str, amt: float) -> str:
 class TransactionRequest(BaseModel):
     description: str
     amount: float
+    date: Optional[str] = None  # optional date string e.g. "2026-05-18"
 
 # what a register request body looks like
 class RegisterRequest(BaseModel):
@@ -171,7 +175,8 @@ def save_transaction(
         user_id=current_user.id,
         description=transaction.description,
         amount=transaction.amount,
-        category=category
+        category=category,
+        date=datetime.strptime(transaction.date, "%Y-%m-%d") if transaction.date else datetime.utcnow()
     )
     db.add(t)
     db.commit()
@@ -194,6 +199,7 @@ def get_transactions(
             "description": t.description,
             "amount": t.amount,
             "category": t.category,
+            "date": t.date.strftime("%Y-%m-%d") if t.date else None,
             "created_at": t.created_at
         }
         for t in transactions
