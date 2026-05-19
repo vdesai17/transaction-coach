@@ -13,7 +13,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
 import Auth from "./pages/Auth"
 
 // all api calls go thru here instead of writing fetch everywhere
-import { classifyAndSave, getTransactions, submitFeedback } from "./services/api"
+import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction } from "./services/api"
 
 // colors for the chart slices
 const COLORS = [
@@ -159,6 +159,16 @@ function App() {
     }
   }
 
+  // deletes a transaction and removes it from local state
+  async function handleDelete(transactionId) {
+    try {
+        await deleteTransaction(transactionId)
+        setTransactions(prev => prev.filter(t => t.id !== transactionId))
+    } catch (err) {
+        console.error("Failed to delete", err)
+    }
+}
+
   // show login/register screen if not logged in
   if (!user) {
     return <Auth onLogin={handleLogin} />
@@ -300,6 +310,24 @@ function App() {
               )}
 
               <span className="t-amount">${Math.abs(t.amount).toFixed(2)}</span>
+
+              {/* delete button */}
+              {t.id && (
+              <button
+              onClick={() => handleDelete(t.id)}
+              style={{
+                padding: "3px 10px",
+                fontSize: "11px",
+                background: "none",
+                color: "var(--text-pale)",
+                border: "1px solid var(--border2)",
+                borderRadius: "4px",
+                cursor: "pointer"
+                 }}
+               >
+               ×
+              </button>
+              )}
             </div>
           ))
         )}

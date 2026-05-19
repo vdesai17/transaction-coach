@@ -232,3 +232,20 @@ def submit_feedback(
     db.commit()
 
     return {"message": "Correction saved", "new_category": body.corrected_category}
+
+
+@app.delete("/transactions/{transaction_id}")
+def delete_transaction(
+    transaction_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    t = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == current_user.id
+    ).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    db.delete(t)
+    db.commit()
+    return {"message": "Deleted"}

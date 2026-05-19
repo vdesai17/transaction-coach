@@ -51,3 +51,7 @@ export const submitFeedback = (transaction_id, corrected_category) =>
 // used for quick testing
 export const predict = (description, amount) =>
   API.post("/predict", { description, amount })
+
+// deletes a transaction by id - used for testing and correcting mistakes
+export const deleteTransaction = (transaction_id) =>
+  API.delete(`/transactions/${transaction_id}`)
