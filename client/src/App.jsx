@@ -24,9 +24,9 @@ function App() {
 
   // filters transactions to only show selected month
   const filteredTransactions = transactions.filter(t => {
-    if (!t.date) return true
-    return t.date.slice(0, 7) === selectedMonth
-  })
+  if (!t.date) return false  // hide transactions with no date
+  return t.date.slice(0, 7) === selectedMonth
+})
 
   const CATEGORIES = [
     "Groceries", "Dining and Cafes", "Shopping & Retail",
