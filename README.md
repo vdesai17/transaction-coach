@@ -1,6 +1,6 @@
 # Finsnap
 
-A full-stack web app that classifies bank transactions into spending categories using machine learning. Built on real transaction classification work done during a Bank Muscat internship, extended to support both Canadian and GCC merchants.
+A full stack web app that classifies bank transactions into spending categories using machine learning. Built on real transaction classification work done during a Bank Muscat internship, extended to support both Canadian and GCC merchants.
 
 **Live demo:** [transaction-coach.vercel.app](https://transaction-coach.vercel.app)
 
@@ -8,39 +8,39 @@ A full-stack web app that classifies bank transactions into spending categories 
 
 ## What It Does
 
-- Paste a transaction description and amount — the ML model classifies it into a spending category instantly
-- Upload a CSV of transactions to classify them all at once
-- See a spending breakdown chart that updates in real time
-- Accounts are personal — your transaction history persists across sessions
-- Click any category badge to correct a misclassification and corrections are logged for future model retraining
+* Paste a transaction description and amount, the ML model classifies it into a spending category instantly
+* Upload a CSV of transactions to classify them all at once
+* See a spending breakdown chart that updates in real time
+* Accounts are personal. Your transaction history persists across sessions
+* Click any category badge to correct a misclassification and corrections are logged for future model retraining
 
 ---
 
 ## Tech Stack
 
 **Frontend**
-- React + Vite
-- Recharts for the spending breakdown chart
-- Papa Parse for CSV parsing
-- Axios for API calls
+* React + Vite
+* Recharts for the spending breakdown chart
+* Papa Parse for CSV parsing
+* Axios for API calls
 
 **Backend**
-- Python FastAPI
-- JWT authentication with python-jose and bcrypt
-- SQLAlchemy ORM
+* Python FastAPI
+* JWT authentication with python-jose and bcrypt
+* SQLAlchemy ORM
 
 **Database**
-- PostgreSQL
+* PostgreSQL
 
 **Machine Learning**
-- Scikit-learn MLP Classifier
-- TF-IDF word and character n-gram features (3-5)
-- Custom merchant lexicon features for GCC and Canadian merchants
-- Trained on 30,000 synthetic transactions across 22 spending categories
+* Scikit-learn MLP Classifier
+* TF-IDF word and character n-gram features (3-5)
+* Custom merchant lexicon features for GCC and Canadian merchants
+* Trained on 30,000 synthetic transactions across 22 spending categories
 
 **Deployment**
-- Frontend: Vercel
-- Backend + Database: Railway
+* Frontend: Vercel
+* Backend + Database: Railway
 
 ---
 
@@ -124,6 +124,7 @@ The ML model was originally built during a Business Intelligence internship at B
 
 ## Project Structure
 
+```
 transaction-coach/
 ├── client/                  # React frontend
 │   ├── src/
