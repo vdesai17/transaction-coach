@@ -242,7 +242,7 @@ def get_transactions(
             "id": t.id,
             "description": t.description,
             "amount": t.amount,
-            "category": t.category,
+            "category": LABEL_MAP.get(int(t.category), t.category) if t.category and t.category.isdigit() else t.category,
             "date": t.date.strftime("%Y-%m-%d") if t.date else None,
             "created_at": t.created_at
         }

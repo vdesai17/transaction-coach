@@ -6,8 +6,10 @@ import Auth from "./pages/Auth"
 import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction } from "./services/api"
 
 const COLORS = [
-  "#3B82F6", "#8B5CF6", "#10B981", "#F59E0B",
-  "#EF4444", "#06B6D4", "#EC4899", "#6366F1"
+  "#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#06B6D4",
+  "#EC4899", "#6366F1", "#F97316", "#14B8A6", "#A855F7", "#84CC16",
+  "#F43F5E", "#0EA5E9", "#D97706", "#7C3AED", "#059669", "#DC2626",
+  "#0891B2", "#9333EA", "#65A30D", "#B45309", "#E11D48"
 ]
 
 function App() {
