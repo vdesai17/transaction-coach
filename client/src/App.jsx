@@ -37,12 +37,14 @@ function App() {
 })
 
   const CATEGORIES = [
-    "Groceries", "Dining and Cafes", "Shopping & Retail",
-    "Fuel and Transport", "Housing and Utilities", "Telecom",
-    "Medical and Health", "Education", "Entertainment and Leisure",
-    "Travel and Hotels", "Bank Charges", "Insurance",
-    "Savings and Investments", "Loan Payments", "Rent Payments",
-    "Charity Donations", "Other / Uncategorized"
+    "Bank Charges", "Business or Freelance Income", "Charity Donations",
+    "Dining and Cafes", "Education", "Entertainment and Leisure",
+    "Fuel and Transport", "Government Services", "Government Support and Pensions",
+    "Groceries", "Home Goods and Furniture", "Housing and Utilities",
+    "Insurance", "Loan Payments", "Medical and Health",
+    "Other / Uncategorized", "Rent Payments", "Salary / Payroll",
+    "Savings and Investments", "Shopping & Retail", "Telecom",
+    "Travel and Hotels", "Vehicle Loans and Fines"
   ]
 
   useEffect(() => {

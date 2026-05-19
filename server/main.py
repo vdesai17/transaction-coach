@@ -47,6 +47,34 @@ char_vectorizer = joblib.load("models/char_vec.joblib")
 scaler = joblib.load("models/scaler.joblib")
 lexicons = joblib.load("models/lexicons.joblib")
 
+# LabelEncoder sorts classes alphabetically — reconstruct the mapping here
+# so the integer predictions from the model map back to readable strings
+LABEL_MAP = {
+    0: "Bank Charges",
+    1: "Business or Freelance Income",
+    2: "Charity Donations",
+    3: "Dining and Cafes",
+    4: "Education",
+    5: "Entertainment and Leisure",
+    6: "Fuel and Transport",
+    7: "Government Services",
+    8: "Government Support and Pensions",
+    9: "Groceries",
+    10: "Home Goods and Furniture",
+    11: "Housing and Utilities",
+    12: "Insurance",
+    13: "Loan Payments",
+    14: "Medical and Health",
+    15: "Other / Uncategorized",
+    16: "Rent Payments",
+    17: "Salary / Payroll",
+    18: "Savings and Investments",
+    19: "Shopping & Retail",
+    20: "Telecom",
+    21: "Travel and Hotels",
+    22: "Vehicle Loans and Fines",
+}
+
 
 # lowercases text and strips everything thats not letters numbers or spaces
 # must match exactly what was done during training
@@ -95,7 +123,7 @@ def run_pipeline(desc: str, amt: float) -> str:
         X_char.reset_index(drop=True),
         X_amt.reset_index(drop=True)
     ], axis=1)
-    return model.predict(X)[0].item()
+    return LABEL_MAP[model.predict(X)[0].item()]
 
 
 # what a transaction request body looks like
