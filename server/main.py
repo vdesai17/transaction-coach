@@ -75,6 +75,23 @@ LABEL_MAP = {
     22: "Vehicle Loans and Fines",
 }
 
+STOP_WORDS = {"the", "at", "in", "of", "to", "a", "an", "and", "or", "for", "on", "with", "by", "from", "is", "it", "its"}
+
+def update_lexicon(description: str, category: str):
+    if category not in lexicons:
+        return
+    cleaned = clean_text(description)
+    tokens = [w for w in cleaned.split() if len(w) > 1 and w not in STOP_WORDS]
+    bigrams = generate_bigrams(tokens)
+    existing_uni = set(lexicons[category]["unigrams"])
+    existing_bi = set(lexicons[category]["bigrams"])
+    new_uni = [t for t in tokens if t not in existing_uni]
+    new_bi = [b for b in bigrams if b not in existing_bi]
+    lexicons[category]["unigrams"].extend(new_uni)
+    lexicons[category]["bigrams"].extend(new_bi)
+    if new_uni or new_bi:
+        joblib.dump(lexicons, "models/lexicons.joblib")
+
 
 # lowercases text and strips everything thats not letters numbers or spaces
 # must match exactly what was done during training
@@ -280,6 +297,10 @@ def submit_feedback(
     # update the transaction too so it shows the right category
     transaction.category = body.corrected_category
     db.commit()
+
+    # immediately boost the corrected category's lexicon with tokens from this description
+    # so the next classification of the same merchant gets the right answer
+    update_lexicon(transaction.description, body.corrected_category)
 
     return {"message": "Correction saved", "new_category": body.corrected_category}
 
