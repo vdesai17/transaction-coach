@@ -1,4 +1,4 @@
-# Transaction Coach
+# Finsnap
 
 A full-stack web app that classifies bank transactions into spending categories using machine learning. Built on real transaction classification work done during a Bank Muscat internship, extended to support both Canadian and GCC merchants.
 
