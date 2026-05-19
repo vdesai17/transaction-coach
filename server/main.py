@@ -268,6 +268,7 @@ def delete_transaction(
     ).first()
     if not t:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    db.query(Correction).filter(Correction.transaction_id == transaction_id).delete()
     db.delete(t)
     db.commit()
     return {"message": "Deleted"}
