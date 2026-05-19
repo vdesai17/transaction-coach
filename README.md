@@ -115,7 +115,7 @@ Negative amounts are expenses. The app handles both GCC merchants (Lulu Hypermar
 
 ## Spending Categories
 
-Groceries, Dining and Cafes, Shopping & Retail, Fuel and Transport, Housing and Utilities, Telecom, Medical and Health, Education, Entertainment and Leisure, Travel and Hotels, Bank Charges, Insurance, Savings and Investments, Loan Payments, Rent Payments, Charity Donations, Salary / Payroll, Other / Uncategorized
+Groceries, Dining and Cafes, Shopping & Retail, Home Goods and Furniture, Fuel and Transport, Housing and Utilities, Rent Payments, Telecom, Medical and Health, Education, Entertainment and Leisure, Travel and Hotels, Bank Charges, Insurance, Savings and Investments, Loan Payments, Vehicle Loans and Fines, Charity Donations, Government Services, Salary / Payroll, Business or Freelance Income, Government Support and Pensions, Other / Uncategorized
 
 ---
 
@@ -129,17 +129,20 @@ The ML model was originally built during a Business Intelligence internship at B
 
 ```
 transaction-coach/
-├── client/                  # React frontend
+├── client/                      # React frontend
 │   ├── src/
-│   │   ├── pages/Auth.jsx   # Login / register screen
-│   │   ├── services/api.js  # All API calls
-│   │   ├── App.jsx          # Main app component
-│   │   └── App.css          # Styles
-│   └── .env                 # API URL config
-└── server/                  # FastAPI backend
-    ├── main.py              # Routes and ML pipeline
-    ├── auth.py              # JWT auth helpers
-    ├── database.py          # SQLAlchemy models
-    ├── models/              # Saved ML artifacts
-    └── data/                # Training data
+│   │   ├── pages/Auth.jsx       # Login / register screen
+│   │   ├── services/api.js      # All API calls
+│   │   ├── App.jsx              # Main app component
+│   │   └── App.css              # Styles
+│   └── .env                     # API URL config
+└── server/                      # FastAPI backend
+    ├── main.py                  # Routes and ML pipeline
+    ├── auth.py                  # JWT auth helpers
+    ├── database.py              # SQLAlchemy models
+    ├── models/                  # ML artifacts loaded by main.py (and deployed to Railway)
+    └── data/
+        ├── multiple_var_testing.ipynb  # Training notebook (saves artifacts to ../models/)
+        ├── transactions.csv            # Synthetic training data
+        └── models/                     # Notebook output — copy to server/models/ after retraining
 ```
