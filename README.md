@@ -1,8 +1,7 @@
 # Finsnap
 
 A full stack web app that classifies bank transactions into spending categories using machine learning. Built on real transaction classification work done during a Bank Muscat internship, extended to support both Canadian and GCC merchants.
-
-**Live demo:** [transaction-coach.vercel.app](https://transaction-coach.vercel.app)
+Live demo: https://finsnap-six.vercel.app
 
 ---
 
