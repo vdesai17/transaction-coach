@@ -53,7 +53,10 @@ The classification pipeline combines three feature types:
 3. **TF-IDF char n-grams** — captures character-level patterns useful for abbreviated merchant names
 4. **Scaled transaction amount** — normalized absolute amount as an additional signal
 
-The MLP achieves ~95% accuracy on test data and ~91% on out-of-sample merchants.
+
+* 3,333 merchants across Oman and Canada (up from ~400)
+* 23 spending categories (up from 22)
+* 88% weighted F1 on test set, 86% on validation
 
 The feedback loop stores every user correction in a `corrections` table. These corrections can be used as additional training data to retrain the model and improve accuracy over time.
 
