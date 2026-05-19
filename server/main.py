@@ -95,7 +95,7 @@ def run_pipeline(desc: str, amt: float) -> str:
         X_char.reset_index(drop=True),
         X_amt.reset_index(drop=True)
     ], axis=1)
-    return model.predict(X)[0]
+    return model.predict(X)[0].item()
 
 
 # what a transaction request body looks like
