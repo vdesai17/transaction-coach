@@ -12,7 +12,7 @@ A full-stack web app that classifies bank transactions into spending categories 
 - Upload a CSV of transactions to classify them all at once
 - See a spending breakdown chart that updates in real time
 - Accounts are personal — your transaction history persists across sessions
-- Click any category badge to correct a misclassification — corrections are logged for future model retraining
+- Click any category badge to correct a misclassification and corrections are logged for future model retraining
 
 ---
 
@@ -118,13 +118,12 @@ Groceries, Dining and Cafes, Shopping & Retail, Fuel and Transport, Housing and 
 
 ## Background
 
-The ML model was originally built during a Business Intelligence internship at Bank Muscat (Summer 2025) to classify retail banking transactions for a Personal Finance Management tool. This project takes that work further — productionizing the model as a REST API and building a full-stack product on top of it.
+The ML model was originally built during a Business Intelligence internship at Bank Muscat (Summer 2025) to classify retail banking transactions for a Personal Finance Management tool. This project takes that work further, productionizing the model as a REST API and building a full-stack product on top of it.
 
 ---
 
 ## Project Structure
 
-```
 transaction-coach/
 ├── client/                  # React frontend
 │   ├── src/
