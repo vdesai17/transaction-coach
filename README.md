@@ -1,6 +1,6 @@
-# Transaction Coach
+# Finsnap
 
-A full-stack web app that classifies bank transactions into spending categories using machine learning. Built on real transaction classification work done during a Bank Muscat internship, extended to support both Canadian and GCC merchants.
+A full stack web app that classifies bank transactions into spending categories using machine learning. Built on real transaction classification work done during a Bank Muscat internship, extended to support both Canadian and GCC merchants.
 
 **Live demo:** [transaction-coach.vercel.app](https://transaction-coach.vercel.app)
 
@@ -8,39 +8,39 @@ A full-stack web app that classifies bank transactions into spending categories 
 
 ## What It Does
 
-- Paste a transaction description and amount — the ML model classifies it into a spending category instantly
-- Upload a CSV of transactions to classify them all at once
-- See a spending breakdown chart that updates in real time
-- Accounts are personal — your transaction history persists across sessions
-- Click any category badge to correct a misclassification — corrections are logged for future model retraining
+* Paste a transaction description and amount, the ML model classifies it into a spending category instantly
+* Upload a CSV of transactions to classify them all at once
+* See a spending breakdown chart that updates in real time
+* Accounts are personal. Your transaction history persists across sessions
+* Click any category badge to correct a misclassification and corrections are logged for future model retraining
 
 ---
 
 ## Tech Stack
 
 **Frontend**
-- React + Vite
-- Recharts for the spending breakdown chart
-- Papa Parse for CSV parsing
-- Axios for API calls
+* React + Vite
+* Recharts for the spending breakdown chart
+* Papa Parse for CSV parsing
+* Axios for API calls
 
 **Backend**
-- Python FastAPI
-- JWT authentication with python-jose and bcrypt
-- SQLAlchemy ORM
+* Python FastAPI
+* JWT authentication with python-jose and bcrypt
+* SQLAlchemy ORM
 
 **Database**
-- PostgreSQL
+* PostgreSQL
 
 **Machine Learning**
-- Scikit-learn MLP Classifier
-- TF-IDF word and character n-gram features (3-5)
-- Custom merchant lexicon features for GCC and Canadian merchants
-- Trained on 30,000 synthetic transactions across 22 spending categories
+* Scikit-learn MLP Classifier
+* TF-IDF word and character n-gram features (3-5)
+* Custom merchant lexicon features for GCC and Canadian merchants
+* Trained on 30,000 synthetic transactions across 22 spending categories
 
 **Deployment**
-- Frontend: Vercel
-- Backend + Database: Railway
+* Frontend: Vercel
+* Backend + Database: Railway
 
 ---
 
@@ -53,7 +53,10 @@ The classification pipeline combines three feature types:
 3. **TF-IDF char n-grams** — captures character-level patterns useful for abbreviated merchant names
 4. **Scaled transaction amount** — normalized absolute amount as an additional signal
 
-The MLP achieves ~95% accuracy on test data and ~91% on out-of-sample merchants.
+
+* 3,333 merchants across Oman and Canada (up from ~400)
+* 23 spending categories (up from 22)
+* 88% weighted F1 on test set, 86% on validation
 
 The feedback loop stores every user correction in a `corrections` table. These corrections can be used as additional training data to retrain the model and improve accuracy over time.
 
@@ -118,7 +121,7 @@ Groceries, Dining and Cafes, Shopping & Retail, Fuel and Transport, Housing and 
 
 ## Background
 
-The ML model was originally built during a Business Intelligence internship at Bank Muscat (Summer 2025) to classify retail banking transactions for a Personal Finance Management tool. This project takes that work further — productionizing the model as a REST API and building a full-stack product on top of it.
+The ML model was originally built during a Business Intelligence internship at Bank Muscat (Summer 2025) to classify retail banking transactions for a Personal Finance Management tool. This project takes that work further, productionizing the model as a REST API and building a full-stack product on top of it.
 
 ---
 
