@@ -2,7 +2,7 @@
 
 **Automatically categorize your bank transactions using machine learning.**
 
-Paste a transaction or upload a CSV — Finsnap classifies it into a spending category instantly, builds your spending breakdown, and learns from your corrections over time.
+Paste a transaction or upload a CSV, Finsnap classifies it into a spending category instantly, builds your spending breakdown, and learns from your corrections over time.
 
 **Live demo:** https://finsnap-six.vercel.app
 
