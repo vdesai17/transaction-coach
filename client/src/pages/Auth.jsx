@@ -56,8 +56,8 @@ function Auth({ onLogin }) {
 
         {/* app title */}
         <div className="app-header" style={{ marginBottom: "32px" }}>
-          <h1>Transaction Coach</h1>
-          <p>Classify your spending. Understand your money.</p>
+          <h1>Finsnap</h1>
+          <p>Understand your money in one page.</p>
         </div>
 
         {/* login / register tab switcher */}

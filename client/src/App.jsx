@@ -21,6 +21,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [correctingId, setCorrectingId] = useState(null)
+  const [pendingCategory, setPendingCategory] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [isDark, setIsDark] = useState(() => (localStorage.getItem("theme") || "dark") === "dark")
@@ -191,8 +192,9 @@ function App() {
         t.id === transactionId ? { ...t, category: newCategory } : t
       ))
       setCorrectingId(null)
+      setPendingCategory("")
     } catch (err) {
-      console.error("Failed to submit correction", err)
+      setError("Failed to save correction")
     }
   }
 
@@ -369,19 +371,29 @@ function App() {
               </span>
 
               {correctingId === t.id ? (
-                <select
-                  style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--accent)", borderRadius: "4px", background: "var(--panel2)", color: "var(--accent-lt)" }}
-                  defaultValue={t.category}
-                  onChange={e => handleCorrection(t.id, e.target.value)}
-                >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <select
+                    style={{ fontSize: "12px", padding: "4px 8px", border: "1px solid var(--accent)", borderRadius: "4px", background: "var(--panel2)", color: "var(--accent-lt)" }}
+                    value={pendingCategory}
+                    onChange={e => setPendingCategory(e.target.value)}
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => handleCorrection(t.id, pendingCategory)}
+                    style={{ padding: "3px 8px", fontSize: "11px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                  >Save</button>
+                  <button
+                    onClick={() => { setCorrectingId(null); setPendingCategory("") }}
+                    style={{ padding: "3px 8px", fontSize: "11px", background: "none", color: "var(--text-pale)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: "pointer" }}
+                  >×</button>
+                </div>
               ) : (
                 <span
                   className="t-category"
-                  onClick={() => t.id && setCorrectingId(t.id)}
+                  onClick={() => { if (t.id) { setCorrectingId(t.id); setPendingCategory(t.category) } }}
                   style={{ cursor: t.id ? "pointer" : "default" }}
                   title={t.id ? "Click to correct" : ""}
                 >
