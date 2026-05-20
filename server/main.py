@@ -1,5 +1,9 @@
 # fastapi stuff
+import logging
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("retrain")
 from fastapi.middleware.cors import CORSMiddleware
 
 # pydantic for defining what request bodies look like
@@ -315,6 +319,17 @@ def submit_feedback(
 def run_retrain(correction_rows):
     global model, word_vectorizer, char_vectorizer, scaler
 
+    logger.info("retrain started — %d correction rows", len(correction_rows))
+    try:
+        _do_retrain(correction_rows)
+        logger.info("retrain complete")
+    except Exception:
+        logger.exception("retrain failed")
+
+
+def _do_retrain(correction_rows):
+    global model, word_vectorizer, char_vectorizer, scaler
+
     base_df = pd.read_csv("data/transactions.csv")
     base_df["cleaned_description"] = base_df["description"].astype(str).apply(clean_text)
     base_df["abs_amount"] = base_df["amount"].abs()
@@ -328,8 +343,10 @@ def run_retrain(correction_rows):
             "category": cat
         } for desc, amount, cat in correction_rows if cat in valid_cats])
         if not corr_df.empty:
-            # repeat corrections 5x so they outweigh the base distribution
-            train_df = pd.concat([train_df] + [corr_df] * 5, ignore_index=True)
+            # each correction gets ~10% influence regardless of base size
+            n_repeats = max(5, len(base_df) // (len(corr_df) * 9))
+            logger.info("boosting %d correction rows %dx", len(corr_df), n_repeats)
+            train_df = pd.concat([train_df] + [corr_df] * n_repeats, ignore_index=True)
 
     le = LabelEncoder()
     y = le.fit_transform(train_df["category"])
