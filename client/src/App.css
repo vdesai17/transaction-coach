@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ─── Dark / winter night (default) ─── */
 :root {
@@ -46,7 +46,7 @@
 
 body {
   background: var(--bg);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: var(--text);
   min-height: 100vh;
   background-image:
@@ -72,11 +72,11 @@ body {
 }
 
 .app-header h1 {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 48px;
-  font-weight: 300;
+  font-family: 'Inter', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
   color: var(--text);
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
   line-height: 1.1;
   margin-bottom: 6px;
 }
@@ -84,8 +84,8 @@ body {
 .app-header p {
   font-size: 14px;
   color: var(--text-pale);
-  font-weight: 300;
-  letter-spacing: .5px;
+  font-weight: 500;
+  letter-spacing: .2px;
 }
 
 /* Input row */
@@ -105,7 +105,7 @@ input {
   background: transparent;
   border: none;
   padding: 10px 14px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--text);
   outline: none;
@@ -120,7 +120,7 @@ input[type="date"] {
   border: none;
   border-left: 1px solid var(--border2);
   padding: 10px 14px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--text-dim);
   background: transparent;
@@ -133,7 +133,7 @@ button {
   border: none;
   padding: 10px 22px;
   border-radius: 7px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: .5px;
@@ -213,7 +213,7 @@ button:hover {
 
 .t-desc {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   flex: 1;
 }
@@ -244,10 +244,9 @@ button:hover {
 }
 
 .empty-state p {
-  font-style: italic;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 18px;
-  font-weight: 300;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* Error */
@@ -309,7 +308,7 @@ button:hover {
   border-bottom: 2px solid transparent;
   border-radius: 0;
   padding: 10px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 2px;
