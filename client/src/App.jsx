@@ -205,7 +205,7 @@ function App() {
       setRetraining(true)
       setRetrainMsg(null)
       const res = await retrainModel()
-      setRetrainMsg(`Retraining started with ${res.data.corrections} correction${res.data.corrections !== 1 ? "s" : ""}. Takes ~2 min — new classifications will use the updated model.`)
+      setRetrainMsg(`Retraining started with ${res.data.corrections} correction${res.data.corrections !== 1 ? "s" : ""}. Takes ~2 min, new classifications will use the updated model.`)
     } catch (err) {
       setRetrainMsg("Failed to start retraining.")
     } finally {
@@ -216,10 +216,13 @@ function App() {
   async function handleDelete(transactionId) {
     try {
       await deleteTransaction(transactionId)
-      setTransactions(prev => prev.filter(t => t.id !== transactionId))
     } catch (err) {
-      console.error("Failed to delete", err)
+      if (err?.response?.status !== 404) {
+        console.error("Failed to delete", err)
+        return
+      }
     }
+    setTransactions(prev => prev.filter(t => t.id !== transactionId))
   }
 
   if (!user) {
