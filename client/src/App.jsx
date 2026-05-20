@@ -129,35 +129,82 @@ function App() {
   function normalizeDate(raw) {
     if (!raw) return new Date().toISOString().split('T')[0]
     const s = String(raw).trim()
-    // already YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
-    // YYYY/MM/DD
     if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-')
-    // MM/DD/YYYY or DD/MM/YYYY — try JS Date
     const d = new Date(s)
     if (!isNaN(d)) return d.toISOString().split('T')[0]
     return new Date().toISOString().split('T')[0]
   }
 
+  function parseBankRow(row) {
+    // ── Description ──
+    // RBC has two description columns — combine them
+    const desc1 = row["Description 1"] || row["description 1"] || ""
+    const desc2 = row["Description 2"] || row["description 2"] || ""
+    const rbcDesc = [desc1, desc2].filter(Boolean).join(" ").trim()
+
+    const desc =
+      rbcDesc ||
+      row.Description || row.description || row.DESCRIPTION ||
+      row.Payee        || row.payee       ||
+      row.Name         || row.name        ||
+      row.Merchant     || row.merchant    ||
+      row.Transaction  || row.transaction ||
+      row.Memo         || row.memo        ||
+      ""
+
+    if (!desc) return null
+
+    // ── Amount ──
+    // Single-column banks (BMO, Tangerine, Wealthsimple, generic)
+    const singleRaw =
+      row.Amount || row.amount || row.AMOUNT ||
+      row["CAD$"] || row["USD$"] ||
+      ""
+
+    // Split-column banks: withdrawals/debits are negative, deposits/credits positive
+    const debitRaw  = row.Debit       || row.debit       || row.Withdrawals || row.withdrawals || ""
+    const creditRaw = row.Credit      || row.credit      || row.Deposits    || row.deposits    || ""
+
+    let amount = null
+
+    if (singleRaw !== "") {
+      const v = parseFloat(String(singleRaw).replace(/[,$]/g, ""))
+      if (!isNaN(v)) amount = v
+    } else if (debitRaw !== "" || creditRaw !== "") {
+      const debit  = parseFloat(String(debitRaw ).replace(/[,$]/g, "")) || 0
+      const credit = parseFloat(String(creditRaw).replace(/[,$]/g, "")) || 0
+      // debit = money leaving → negative; credit = money arriving → positive
+      if (debit  > 0) amount = -debit
+      else if (credit > 0) amount = credit
+    }
+
+    if (amount === null) return null
+
+    // ── Date ──
+    const rawDate =
+      row.Date || row.date || row.DATE ||
+      row["Transaction Date"] || row["transaction date"] ||
+      ""
+
+    return { desc, amount, date: normalizeDate(rawDate) }
+  }
+
   async function handleCSVUpload(e) {
     const file = e.target.files[0]
     if (!file) return
-    // reset so the same file can be re-uploaded
     e.target.value = ""
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        // PapaParse doesn't await async callbacks — kick off the work outside
-        const validRows = results.data.filter(row => {
-          const desc = row.description || row.Description || row.DESCRIPTION
-          const amt  = row.amount      || row.Amount      || row.AMOUNT
-          return desc && amt && !isNaN(parseFloat(amt))
-        })
+        const validRows = results.data
+          .map(parseBankRow)
+          .filter(Boolean)
 
         if (validRows.length === 0) {
-          setError("No valid rows found. CSV needs 'description' and 'amount' columns.")
+          setError("No valid rows found. Supported banks: RBC, TD, Scotiabank, BMO, CIBC, Tangerine, Wealthsimple, or any CSV with description + amount columns.")
           return
         }
 
@@ -165,12 +212,9 @@ function App() {
 
         ;(async () => {
           let done = 0
-          for (const row of validRows) {
-            const desc    = row.description || row.Description || row.DESCRIPTION
-            const amt     = row.amount      || row.Amount      || row.AMOUNT
-            const rowDate = normalizeDate(row.date || row.Date || row.DATE)
+          for (const { desc, amount, date } of validRows) {
             try {
-              const res = await classifyAndSave(desc, parseFloat(amt), rowDate)
+              const res = await classifyAndSave(desc, amount, date)
               setTransactions(prev => [...prev, res.data])
             } catch (err) {
               console.error("Failed to classify row:", desc, err?.response?.data || err.message)
