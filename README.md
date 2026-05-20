@@ -10,18 +10,18 @@ Paste a transaction or upload a CSV — Finsnap classifies it into a spending ca
 
 ## The Problem
 
-Bank statements are a wall of raw text. "LULU HYPERMARKET 0042 MUSCAT" and "TTC PRESTO TORONTO" tell you nothing about where your money actually went. Finsnap reads those descriptions and turns them into meaningful categories — Groceries, Dining, Transport, Rent — so you can see your spending at a glance.
+Bank statements are a wall of raw text. "LULU HYPERMARKET 0042 MUSCAT" and "TTC PRESTO TORONTO" tell you nothing about where your money actually went. Finsnap reads those descriptions and turns them into meaningful categories (Groceries, Dining, Transport, Rent), so you can see your spending at a glance.
 
 ---
 
 ## Features
 
-- **Instant classification** — paste any transaction description and amount, get a category in under a second
-- **CSV bulk upload** — classify an entire month of transactions at once
-- **Live spending chart** — donut chart and monthly trend bar chart update as you add transactions
-- **Month filter** — switch between months to compare spending
-- **Correction loop** — click any category to correct it; the model learns from corrections immediately and can be fully retrained on demand
-- **Personal accounts** — JWT authentication, your transaction history persists across sessions
+- **Instant classification**: paste any transaction description and amount, get a category in under a second
+- **CSV bulk upload**: classify an entire month of transactions at once
+- **Live spending chart**: donut chart and monthly trend bar chart update as you add transactions
+- **Month filter**: switch between months to compare spending
+- **Correction loop**: click any category to correct it; the model learns from corrections immediately and can be fully retrained on demand
+- **Personal accounts**: JWT authentication, your transaction history persists across sessions
 
 ---
 
@@ -29,10 +29,10 @@ Bank statements are a wall of raw text. "LULU HYPERMARKET 0042 MUSCAT" and "TTC 
 
 The classifier combines four feature types per transaction:
 
-1. **Merchant lexicons** — custom dictionaries of 3,333 merchants across Oman and Canada, built from real GCC and Canadian banking data. Each description is scored against unigram and bigram match counts per category.
-2. **TF-IDF word n-grams** — captures word-level patterns in transaction descriptions (e.g. "tim hortons", "lulu hypermarket")
-3. **TF-IDF character n-grams** — handles abbreviated and inconsistently formatted merchant names at the character level
-4. **Scaled transaction amount** — the absolute amount is a meaningful signal (e.g. a $4 charge is rarely rent)
+1. **Merchant lexicons**: custom dictionaries of 3,333 merchants across Oman and Canada, built from real GCC and Canadian banking data. Each description is scored against unigram and bigram match counts per category.
+2. **TF-IDF word n-grams**: captures word-level patterns in transaction descriptions (e.g. "tim hortons", "lulu hypermarket")
+3. **TF-IDF character n-grams**: handles abbreviated and inconsistently formatted merchant names at the character level
+4. **Scaled transaction amount**: the absolute amount is a meaningful signal (e.g. a $4 charge is rarely rent)
 
 These features feed into a two-layer **MLP Classifier** (512 → 256 hidden units) trained on **30,000 synthetic transactions** across **23 spending categories**.
 
@@ -42,8 +42,8 @@ These features feed into a two-layer **MLP Classifier** (512 → 256 hidden unit
 
 Two-tier learning from user corrections:
 
-- **Instant (Option A):** When you correct a category, the merchant's tokens are immediately added to the right lexicon in memory. The very next classification of that merchant gets the corrected result — no retraining needed.
-- **Full retrain (Option B):** Hit *Retrain Model* to re-fit the entire pipeline using the base training data plus all saved corrections (weighted 5× to ensure they stick). Runs as a background task — the model hot-swaps in memory when done.
+**Instant:** When you correct a category, the merchant's tokens are immediately added to the right lexicon in memory. The very next classification of that merchant gets the corrected result, no retraining needed.
+**Full retrain:** Hit *Retrain Model* to re-fit the entire pipeline using the base training data plus all saved corrections (weighted 5× to ensure they stick). Runs as a background task, the model hot-swaps in memory when done.
 
 ---
 
@@ -61,7 +61,7 @@ Two-tier learning from user corrections:
 
 ## Background
 
-The ML model was originally built during a **Business Intelligence internship at Bank Muscat (Summer 2025)** as part of a Personal Finance Management tool for retail banking customers. This project takes that work further — productionizing the model as a REST API, building a full-stack product on top of it, and adding a live feedback loop that lets the model improve from real user corrections.
+The ML model was originally built during a **Business Intelligence internship at Bank Muscat (Summer 2025)** as part of a Personal Finance Management tool for retail banking customers. This project takes that work further, productionizing the model as a REST API, building a full-stack product on top of it, and adding a live feedback loop that lets the model improve from real user corrections.
 
 ---
 
