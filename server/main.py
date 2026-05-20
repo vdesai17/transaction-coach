@@ -300,7 +300,10 @@ def submit_feedback(
 
     # immediately boost the corrected category's lexicon with tokens from this description
     # so the next classification of the same merchant gets the right answer
-    update_lexicon(transaction.description, body.corrected_category)
+    try:
+        update_lexicon(transaction.description, body.corrected_category)
+    except Exception:
+        pass  # lexicon update is best-effort; correction is already saved to DB
 
     return {"message": "Correction saved", "new_category": body.corrected_category}
 
