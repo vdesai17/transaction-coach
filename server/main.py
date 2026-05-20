@@ -1,5 +1,5 @@
 # fastapi stuff
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
 # pydantic for defining what request bodies look like
@@ -13,6 +13,9 @@ import joblib
 import pandas as pd
 import numpy as np
 import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.neural_network import MLPClassifier
 
 # sqlalchemy session type for type hints
 from sqlalchemy.orm import Session
@@ -306,6 +309,83 @@ def submit_feedback(
         pass  # lexicon update is best-effort; correction is already saved to DB
 
     return {"message": "Correction saved", "new_category": body.corrected_category}
+
+
+def run_retrain(correction_rows):
+    global model, word_vectorizer, char_vectorizer, scaler
+
+    base_df = pd.read_csv("data/transactions.csv")
+    base_df["cleaned_description"] = base_df["description"].astype(str).apply(clean_text)
+    base_df["abs_amount"] = base_df["amount"].abs()
+    train_df = base_df[["cleaned_description", "abs_amount", "category"]].copy()
+
+    if correction_rows:
+        valid_cats = set(LABEL_MAP.values())
+        corr_df = pd.DataFrame([{
+            "cleaned_description": clean_text(desc),
+            "abs_amount": abs(amount),
+            "category": cat
+        } for desc, amount, cat in correction_rows if cat in valid_cats])
+        if not corr_df.empty:
+            # repeat corrections 5x so they outweigh the base distribution
+            train_df = pd.concat([train_df] + [corr_df] * 5, ignore_index=True)
+
+    le = LabelEncoder()
+    y = le.fit_transform(train_df["category"])
+
+    new_word_vec = TfidfVectorizer(ngram_range=(1, 3), analyzer="word", max_features=2000)
+    new_char_vec = TfidfVectorizer(ngram_range=(3, 5), analyzer="char", max_features=2000)
+    new_scaler   = StandardScaler()
+
+    X_lex  = extract_features(train_df, lexicons)
+    X_word = pd.DataFrame(new_word_vec.fit_transform(train_df["cleaned_description"]).toarray(), columns=new_word_vec.get_feature_names_out())
+    X_char = pd.DataFrame(new_char_vec.fit_transform(train_df["cleaned_description"]).toarray(), columns=new_char_vec.get_feature_names_out())
+    X_amt  = pd.DataFrame(new_scaler.fit_transform(train_df[["abs_amount"]]), columns=["abs_amount"])
+    X = pd.concat([X_lex.reset_index(drop=True), X_word.reset_index(drop=True), X_char.reset_index(drop=True), X_amt.reset_index(drop=True)], axis=1)
+
+    new_model = MLPClassifier(
+        hidden_layer_sizes=(512, 256),
+        activation="relu",
+        solver="adam",
+        alpha=0.01,
+        learning_rate_init=0.001,
+        batch_size=512,
+        max_iter=1000,
+        early_stopping=True,
+        validation_fraction=0.1,
+        n_iter_no_change=20,
+        random_state=42,
+        verbose=False
+    )
+    new_model.fit(X, y)
+
+    model          = new_model
+    word_vectorizer = new_word_vec
+    char_vectorizer = new_char_vec
+    scaler         = new_scaler
+
+    try:
+        joblib.dump(model,           "models/model.joblib")
+        joblib.dump(word_vectorizer, "models/word_vec.joblib")
+        joblib.dump(char_vectorizer, "models/char_vec.joblib")
+        joblib.dump(scaler,          "models/scaler.joblib")
+    except Exception:
+        pass  # disk write is best-effort; globals are already updated in memory
+
+
+@app.post("/retrain")
+def retrain(
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    rows = (
+        db.query(Transaction.description, Transaction.amount, Correction.corrected_category)
+        .join(Correction, Correction.transaction_id == Transaction.id)
+        .all()
+    )
+    background_tasks.add_task(run_retrain, rows)
+    return {"message": "Retraining started", "corrections": len(rows)}
 
 
 @app.delete("/transactions/{transaction_id}")

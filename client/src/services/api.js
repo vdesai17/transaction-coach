@@ -55,3 +55,7 @@ export const predict = (description, amount) =>
 // deletes a transaction by id - used for testing and correcting mistakes
 export const deleteTransaction = (transaction_id) =>
   API.delete(`/transactions/${transaction_id}`)
+
+// triggers model retraining using all saved corrections
+export const retrainModel = () =>
+  API.post("/retrain")

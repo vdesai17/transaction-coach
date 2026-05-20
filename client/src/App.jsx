@@ -3,7 +3,7 @@ import Papa from "papaparse"
 import "./App.css"
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 import Auth from "./pages/Auth"
-import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction } from "./services/api"
+import { classifyAndSave, getTransactions, submitFeedback, deleteTransaction, retrainModel } from "./services/api"
 
 const COLORS = [
   "#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#06B6D4",
@@ -26,6 +26,8 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [isDark, setIsDark] = useState(() => (localStorage.getItem("theme") || "dark") === "dark")
   const [csvProgress, setCsvProgress] = useState(null) // null | { done, total }
+  const [retraining, setRetraining] = useState(false)
+  const [retrainMsg, setRetrainMsg] = useState(null)
 
   useEffect(() => {
     const theme = isDark ? "dark" : "light"
@@ -198,6 +200,19 @@ function App() {
     }
   }
 
+  async function handleRetrain() {
+    try {
+      setRetraining(true)
+      setRetrainMsg(null)
+      const res = await retrainModel()
+      setRetrainMsg(`Retraining started with ${res.data.corrections} correction${res.data.corrections !== 1 ? "s" : ""}. Takes ~2 min — new classifications will use the updated model.`)
+    } catch (err) {
+      setRetrainMsg("Failed to start retraining.")
+    } finally {
+      setRetraining(false)
+    }
+  }
+
   async function handleDelete(transactionId) {
     try {
       await deleteTransaction(transactionId)
@@ -229,6 +244,13 @@ function App() {
               {isDark ? "Light" : "Dark"}
             </button>
             <button
+              onClick={handleRetrain}
+              disabled={retraining}
+              style={{ padding: "6px 12px", fontSize: "11px", background: "none", color: "var(--text-dim)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: retraining ? "not-allowed" : "pointer", opacity: retraining ? 0.5 : 1 }}
+            >
+              {retraining ? "Starting..." : "Retrain Model"}
+            </button>
+            <button
               onClick={handleLogout}
               style={{ padding: "6px 14px", fontSize: "11px", background: "none", color: "var(--text-dim)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: "pointer" }}
             >
@@ -237,6 +259,12 @@ function App() {
           </div>
         </div>
       </div>
+
+      {retrainMsg && (
+        <div style={{ marginBottom: "16px", padding: "10px 14px", background: "var(--panel2)", border: "1px solid var(--border2)", borderRadius: "6px", fontSize: "13px", color: "var(--text-dim)" }}>
+          {retrainMsg}
+        </div>
+      )}
 
       <div className="input-row">
         <input
